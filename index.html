@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Koltov Journal</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@v0/ui@latest/dist/v0.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <style>
+        body {
+            font-family: 'Times New Roman', serif;
+            background-color: #f0f0f5;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        header {
+            background-color: #1f1f2e;
+            color: #fff;
+            text-align: center;
+            padding: 3rem 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        header h1 {
+            font-size: 4rem;
+            margin: 0;
+            font-style: italic;
+        }
+
+        header p {
+            margin: 0.5rem 0 0;
+            font-size: 1.4rem;
+            color: #ccc;
+        }
+
+        .instructions {
+            text-align: center;
+            font-size: 1.2rem;
+            margin: 1.5rem 0 3rem;
+            color: #555;
+        }
+
+        main {
+            padding: 4rem;
+            max-width: 1200px;
+            margin: auto;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        #articles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .article {
+            border: 1px solid #ccc;
+            padding: 1.5rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-radius: 12px;
+            background-color: #fafafa;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .article:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .article h3 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: #1a5276;
+            transition: color 0.3s ease;
+        }
+
+        .article h3:hover {
+            color: #154360;
+        }
+
+        .article-date {
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 1rem;
+        }
+
+        .article-content {
+            display: none;
+            margin-top: 1rem;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #c0392b;
+        }
+
+        .like-dislike {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .like-dislike button {
+            background-color: #1a5276;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #fff;
+            transition: background-color 0.3s ease;
+        }
+
+        .like-dislike button:hover {
+            background-color: #154360;
+        }
+
+        .like-dislike button.dislike {
+            background-color: #922b21;
+        }
+
+        .like-dislike button.dislike:hover {
+            background-color: #641e16;
+        }
+
+        button.delete {
+            background-color: #c0392b;
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button.delete:hover {
+            background-color: #a93226;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            background-color: #1f1f2e;
+            color: white;
+            margin-top: 3rem;
+            border-top: 2px solid #444;
+        }
+
+        .fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #1a5276;
+            color: white;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .fab:hover {
+            background-color: #154360;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Koltov Journal</h1>
+        <p>A project by Emuna</p>
+    </header>
+
+    <div class="instructions">
+        <p>Click on an article title to expand and shrink the article. You can like each article.</p>
+    </div>
+
+    <main>
+        <section id="articles">
+            <div id="article-list"></div>
+        </section>
+
+        <section id="admin-controls" class="hidden">
+            <h2>Admin Panel</h2>
+            <input type="text" id="article-title" placeholder="Article Title">
+            <textarea id="article-content" placeholder="Write your article here..."></textarea>
+            <button onclick="uploadArticle()">Upload Article</button>
+        </section>
+    </main>
+
+
+    <button onclick="authenticateAdmin()" class="fab"><i class="fas fa-user-lock"></i></button>
+
+    <script>
+        const adminPassword = "alibaba3";
+        let articles = JSON.parse(localStorage.getItem('articles')) || [];
+        let likedArticles = JSON.parse(localStorage.getItem('likedArticles')) || {};
+        let isAdmin = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            displayArticles();
+        });
+
+        function authenticateAdmin() {
+            const password = prompt("Enter admin password:");
+            if (password === adminPassword) {
+                isAdmin = true;
+                document.getElementById('admin-controls').classList.remove('hidden');
+                displayArticles(); // Refresh to show delete buttons
+            } else {
+                alert("Incorrect password.");
+            }
+        }
+
+        function displayArticles() {
+            const articleList = document.getElementById('article-list');
+            articleList.innerHTML = '';
+            articles.forEach(article => {
+                const articleDiv = document.createElement('div');
+                articleDiv.className = 'article';
+                articleDiv.innerHTML = `
+                    <h3 onclick="toggleArticle(${article.id})">${article.title}</h3>
+                    <p class="article-date">${new Date(article.date).toLocaleDateString()}</p>
+                    <div class="article-content" id="content-${article.id}">
+                        <button onclick="toggleArticle(${article.id})">&times;</button>
+                        <p>${article.content}</p>
+                        <div class="like-dislike">
+                            <button onclick="toggleLike(${article.id})"><i class="fas fa-thumbs-up"></i> (${article.likes})</button>
+                        </div>
+                        <button class="delete ${isAdmin ? '' : 'hidden'}" onclick="deleteArticle(${article.id})"><i class="fas fa-trash"></i> Delete</button>
+                    </div>
+                `;
+                articleList.appendChild(articleDiv);
+            });
+        }
+
+        function toggleArticle(id) {
+            const contentDiv = document.getElementById(`content-${id}`);
+            contentDiv.style.display = contentDiv.style.display === 'none' || contentDiv.style.display === '' ? 'block' : 'none';
+        }
+
+        function uploadArticle() {
+            const title = document.getElementById('article-title').value;
+            const content = document.getElementById('article-content').value;
+
+            if (title && content) {
+                const newArticle = {
+                    id: Date.now(),
+                    title: title,
+                    content: content,
+                    likes: 0,
+                    dislikes: 0,
+                    date: new Date().toISOString()
+                };
+
+                articles.push(newArticle);
+                localStorage.setItem('articles', JSON.stringify(articles));
+                displayArticles();
+            }
+        }
+
+        function toggleLike(id) {
+            const article = articles.find(a => a.id === id);
+            if (!likedArticles[id] || likedArticles[id] === 'dislike') {
+                if (likedArticles[id] === 'dislike') article.dislikes--;
+                article.likes++;
+                likedArticles[id] = 'like';
+            } else {
+                article.likes--;
+                delete likedArticles[id];
+            }
+            updateStorage();
+        }
+
+        function toggleDislike(id) {
+            const article = articles.find(a => a.id === id);
+            if (!likedArticles[id] || likedArticles[id] === 'like') {
+                if (likedArticles[id] === 'like') article.likes--;
+                article.dislikes++;
+                likedArticles[id] = 'dislike';
+            } else {
+                article.dislikes--;
+                delete likedArticles[id];
+            }
+            updateStorage();
+        }
+
+        function deleteArticle(id) {
+            if (!isAdmin) {
+                alert("You don't have permission to delete this article.");
+                return;
+            }
+            articles = articles.filter(article => article.id !== id);
+            localStorage.setItem('articles', JSON.stringify(articles));
+            displayArticles();
+        }
+
+        function updateStorage() {
+            localStorage.setItem('likedArticles', JSON.stringify(likedArticles));
+            localStorage.setItem('articles', JSON.stringify(articles));
+            displayArticles();
+        }
+    </script>
+
+</body>
+
+</html>
